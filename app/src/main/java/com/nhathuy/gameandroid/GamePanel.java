@@ -12,6 +12,7 @@ import android.view.SurfaceView;
 import androidx.annotation.NonNull;
 
 import com.nhathuy.gameandroid.entities.GameCharacters;
+import com.nhathuy.gameandroid.helpers.GameConstants;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -26,10 +27,17 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     private  float x,y;
     private Random random;
 
-    private ArrayList<PointF> skeletons= new ArrayList<>();
-
+//    private ArrayList<PointF> skeletons= new ArrayList<>();
+    private PointF skeletonPos;
     //thêm luồng cho game
     private GameLoop gameLoop;
+
+    private int playerAniIndexY,playerFaceDir= GameConstants.Face_Dir.RIGHT;
+    private int aniTick;
+    private int aniSpeed=10;
+    private long lastDirChange = System.currentTimeMillis();
+    private int skeletonFaceDir=GameConstants.Face_Dir.DOWN;
+
     public GamePanel(Context context){
         super(context);
         holder=getHolder();
@@ -38,30 +46,66 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         random=new Random();
         gameLoop=new GameLoop(this);
 
-        for (int i=0;i<50;i++){
-            skeletons.add(new PointF(random.nextInt(1080),random.nextInt(1920)));
-        }
+        skeletonPos =new PointF(random.nextInt(1080),random.nextInt(1920));
+
     }
 
     public void render(){
         Canvas c=holder.lockCanvas();
         c.drawColor(Color.BLACK);
 
-        c.drawBitmap(GameCharacters.PLAYER.getSpriteSheet(),500,500,null);
-        c.drawBitmap(GameCharacters.PLAYER.getSprites(6,3),x,y,null);
 
-        for(PointF pos:skeletons)
-            c.drawBitmap(GameCharacters.SKELETON.getSprites(0,0),pos.x,pos.y,null);
+        c.drawBitmap(GameCharacters.PLAYER.getSprites(playerAniIndexY,playerFaceDir),x,y,null);
+        c.drawBitmap(GameCharacters.SKELETON.getSprites(playerAniIndexY,skeletonFaceDir),skeletonPos.x,skeletonPos.y,null);
+
 
         holder.unlockCanvasAndPost(c);
     }
 
     //update lại giao diện
     public void update(double delta){
-        for(PointF pos:skeletons){
-            pos.y+=delta*300;
-            if(pos.y>=1920){
-                pos.y=0;
+        if (System.currentTimeMillis() - lastDirChange >= 3000) {
+            skeletonFaceDir = random.nextInt(4);
+            lastDirChange = System.currentTimeMillis();
+        }
+        switch (skeletonFaceDir){
+            case GameConstants.Face_Dir.DOWN:
+                skeletonPos.y+=delta*300;
+                if(skeletonPos.y>=1920){
+                    skeletonFaceDir =GameConstants.Face_Dir.UP;
+                }
+                break;
+            case GameConstants.Face_Dir.UP:
+                skeletonPos.y-=delta*300;
+                if(skeletonPos.y<=0){
+                    skeletonFaceDir =GameConstants.Face_Dir.DOWN;
+                }
+                break;
+            case GameConstants.Face_Dir.RIGHT:
+                skeletonPos.x+=delta*300;
+                if(skeletonPos.x>=1080){
+                    skeletonFaceDir =GameConstants.Face_Dir.LEFT;
+                }
+                break;
+            case GameConstants.Face_Dir.LEFT:
+                skeletonPos.x-=delta*300;
+                if(skeletonPos.x<=0){
+                    skeletonFaceDir =GameConstants.Face_Dir.RIGHT;
+                }
+                break;
+        }
+
+        updateAnimation();
+    }
+
+    // cập nhật lại chuyển động của nhân vật
+    private void updateAnimation(){
+        aniTick++;
+        if(aniTick>=aniSpeed){
+            aniTick=0;
+            playerAniIndexY++;
+            if(playerAniIndexY>=4){
+                playerAniIndexY=0;
             }
         }
     }
@@ -71,6 +115,27 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     public boolean onTouchEvent(MotionEvent event) {
 
         if(event.getAction()==MotionEvent.ACTION_DOWN){
+
+            float newX=event.getX();
+            float newY=event.getY();
+
+            float xDiff= Math.abs(newX-x);
+            float yDiff= Math.abs(newY-y);
+
+            if(xDiff>yDiff){
+                if(newX>x){
+                    playerFaceDir=GameConstants.Face_Dir.RIGHT;
+                }
+                else playerFaceDir=GameConstants.Face_Dir.LEFT;
+            }
+            else{
+                if(newY>y){
+                    playerFaceDir=GameConstants.Face_Dir.DOWN;
+                }
+                else playerFaceDir=GameConstants.Face_Dir.UP;
+            }
+
+
 
             x=event.getX();
             y=event.getY();
