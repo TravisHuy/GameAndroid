@@ -11,6 +11,8 @@ import android.view.SurfaceView;
 
 import androidx.annotation.NonNull;
 
+import com.nhathuy.gameandroid.entities.GameCharacters;
+
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -21,9 +23,10 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
 
     private Paint redPaint= new Paint();
     private SurfaceHolder holder;
-
+    private  float x,y;
     private Random random;
-    private ArrayList<RndSquare> squarePos= new ArrayList<>();
+
+    private ArrayList<PointF> skeletons= new ArrayList<>();
 
     //thêm luồng cho game
     private GameLoop gameLoop;
@@ -34,25 +37,32 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         redPaint.setColor(Color.GREEN);
         random=new Random();
         gameLoop=new GameLoop(this);
+
+        for (int i=0;i<50;i++){
+            skeletons.add(new PointF(random.nextInt(1080),random.nextInt(1920)));
+        }
     }
 
     public void render(){
         Canvas c=holder.lockCanvas();
         c.drawColor(Color.BLACK);
-        //dùng synchronized tránh xung đột dữ liệu
-        synchronized (squarePos){
-            for (RndSquare pos: squarePos){
-                pos.draw(c);
-            }
-        }
+
+        c.drawBitmap(GameCharacters.PLAYER.getSpriteSheet(),500,500,null);
+        c.drawBitmap(GameCharacters.PLAYER.getSprites(6,3),x,y,null);
+
+        for(PointF pos:skeletons)
+            c.drawBitmap(GameCharacters.SKELETON.getSprites(0,0),pos.x,pos.y,null);
 
         holder.unlockCanvasAndPost(c);
     }
 
     //update lại giao diện
     public void update(double delta){
-        for(RndSquare square:squarePos){
-            square.move(delta);
+        for(PointF pos:skeletons){
+            pos.y+=delta*300;
+            if(pos.y>=1920){
+                pos.y=0;
+            }
         }
     }
 
@@ -61,17 +71,10 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     public boolean onTouchEvent(MotionEvent event) {
 
         if(event.getAction()==MotionEvent.ACTION_DOWN){
-            PointF pos=new PointF(event.getX(),event.getY());
 
-            int color= Color.rgb(random.nextInt(256),random.nextInt(256),random.nextInt(256));
-            int size= 25+ random.nextInt(101);
-
-            synchronized (squarePos){
-                squarePos.add(new RndSquare(pos,color,size));
-            }
+            x=event.getX();
+            y=event.getY();
         }
-
-
 
         return  true;
     }
@@ -90,32 +93,5 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
 
     }
-    private class RndSquare{
-        private PointF pos;
-        private int size;
-        private Paint paint;
-        private int xDir=1, yDir=1;
-        public RndSquare(PointF pos, int color, int size){
-            this.pos=pos;
-            this.size=size;
-            paint=new Paint();
-            paint.setColor(color);
-        }
 
-        //thêm bước di chuyển màn hình
-        public void move(double delta){
-            pos.x+=xDir*300*delta;
-            if(pos.x>=1080 || pos.x<=0){
-                xDir*=-1;
-            }
-            pos.y+=yDir*300*delta;
-            if(pos.y>=1920 || pos.y<=0){
-                yDir*=-1;
-            }
-        }
-
-        public void draw(Canvas c){
-            c.drawRect(pos.x,pos.y,pos.x+size,pos.y+size,paint);
-        }
-    }
 }
