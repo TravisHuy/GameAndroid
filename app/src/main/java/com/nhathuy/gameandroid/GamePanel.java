@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Point;
 import android.graphics.PointF;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -13,6 +14,7 @@ import androidx.annotation.NonNull;
 
 import com.nhathuy.gameandroid.entities.GameCharacters;
 import com.nhathuy.gameandroid.helpers.GameConstants;
+import com.nhathuy.gameandroid.inputs.TouchEvents;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -31,7 +33,10 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     private PointF skeletonPos;
     //thêm luồng cho game
     private GameLoop gameLoop;
-
+    private boolean movePlayer;
+    //touch
+    private TouchEvents touchEvents;
+    private PointF lastTouchDiff;
     private int playerAniIndexY,playerFaceDir= GameConstants.Face_Dir.RIGHT;
     private int aniTick;
     private int aniSpeed=10;
@@ -45,7 +50,7 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         redPaint.setColor(Color.GREEN);
         random=new Random();
         gameLoop=new GameLoop(this);
-
+        touchEvents= new TouchEvents(this);
         skeletonPos =new PointF(random.nextInt(1080),random.nextInt(1920));
 
     }
@@ -54,6 +59,7 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         Canvas c=holder.lockCanvas();
         c.drawColor(Color.BLACK);
 
+        touchEvents.draw(c);
 
         c.drawBitmap(GameCharacters.PLAYER.getSprites(playerAniIndexY,playerFaceDir),x,y,null);
         c.drawBitmap(GameCharacters.SKELETON.getSprites(playerAniIndexY,skeletonFaceDir),skeletonPos.x,skeletonPos.y,null);
@@ -94,12 +100,52 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
                 }
                 break;
         }
+        updatePlayerMove(delta);
 
         updateAnimation();
     }
 
+    private void updatePlayerMove(double delta) {
+        if(!movePlayer)
+            return;
+        float baseSpeed=(float) delta*300;
+        float ratio=Math.abs(lastTouchDiff.y)/Math.abs(lastTouchDiff.x);
+        double angle= Math.atan(ratio);
+
+        float xSpeed= (float) Math.cos(angle);
+        float ySpeed= (float) Math.sin(angle);
+
+//        System.out.println("Angle: "+Math.toDegrees(angle));
+//        System.out.println("xSpeed: " + xSpeed+ "| ySpeed: "+ySpeed);
+
+        if(xSpeed>ySpeed){
+            if(lastTouchDiff.x>0){
+                playerFaceDir=GameConstants.Face_Dir.RIGHT;
+            }
+            else playerFaceDir=GameConstants.Face_Dir.LEFT;
+        }
+        else{
+            if(lastTouchDiff.y>0){
+                playerFaceDir=GameConstants.Face_Dir.DOWN;
+            }
+            else playerFaceDir=GameConstants.Face_Dir.UP;
+        }
+
+        if(lastTouchDiff.x<0){
+            xSpeed*=-1;
+        }
+        if(lastTouchDiff.y<0){
+            ySpeed*=-1;
+        }
+        x+=xSpeed*baseSpeed;
+        y+=ySpeed*baseSpeed;
+    }
+
     // cập nhật lại chuyển động của nhân vật
     private void updateAnimation(){
+        if(!movePlayer){
+            return;
+        }
         aniTick++;
         if(aniTick>=aniSpeed){
             aniTick=0;
@@ -114,34 +160,7 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     @Override
     public boolean onTouchEvent(MotionEvent event) {
 
-        if(event.getAction()==MotionEvent.ACTION_DOWN){
-
-            float newX=event.getX();
-            float newY=event.getY();
-
-            float xDiff= Math.abs(newX-x);
-            float yDiff= Math.abs(newY-y);
-
-            if(xDiff>yDiff){
-                if(newX>x){
-                    playerFaceDir=GameConstants.Face_Dir.RIGHT;
-                }
-                else playerFaceDir=GameConstants.Face_Dir.LEFT;
-            }
-            else{
-                if(newY>y){
-                    playerFaceDir=GameConstants.Face_Dir.DOWN;
-                }
-                else playerFaceDir=GameConstants.Face_Dir.UP;
-            }
-
-
-
-            x=event.getX();
-            y=event.getY();
-        }
-
-        return  true;
+       return touchEvents.touchEvent(event);
     }
 
     @Override
@@ -158,5 +177,17 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
 
     }
+    public void setPlayerMoveTrue(PointF lastTouchDiff){
+        movePlayer= true;
+        this.lastTouchDiff=lastTouchDiff;
+    }
+    public void setPlayerMoveFalse(){
+        movePlayer=false;
+        resetAnimation();
+    }
 
+    private void resetAnimation() {
+        aniTick=0;
+        playerAniIndexY=0;
+    }
 }
