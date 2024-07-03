@@ -11,7 +11,7 @@ import com.nhathuy.gameandroid.MainActivity;
 
 public class TouchEvents {
     private GamePanel gamePanel;
-    private float xCenter=540,yCenter=2500,radius=100;
+    private float xCenter=350,yCenter=1050,radius=150;
     private Paint circlePaint,yellowPaint;
 
     private float xTouch,yTouch;

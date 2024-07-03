@@ -1,5 +1,8 @@
 package com.nhathuy.gameandroid;
 
+import static com.nhathuy.gameandroid.MainActivity.GAME_HEIGHT;
+import static com.nhathuy.gameandroid.MainActivity.GAME_WIDTH;
+
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -51,7 +54,7 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         random=new Random();
         gameLoop=new GameLoop(this);
         touchEvents= new TouchEvents(this);
-        skeletonPos =new PointF(random.nextInt(1080),random.nextInt(1920));
+        skeletonPos =new PointF(random.nextInt(GAME_WIDTH ),random.nextInt(GAME_HEIGHT));
 
     }
 
@@ -77,7 +80,7 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         switch (skeletonFaceDir){
             case GameConstants.Face_Dir.DOWN:
                 skeletonPos.y+=delta*300;
-                if(skeletonPos.y>=1920){
+                if(skeletonPos.y>=GAME_HEIGHT ){
                     skeletonFaceDir =GameConstants.Face_Dir.UP;
                 }
                 break;
@@ -89,7 +92,7 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
                 break;
             case GameConstants.Face_Dir.RIGHT:
                 skeletonPos.x+=delta*300;
-                if(skeletonPos.x>=1080){
+                if(skeletonPos.x>=GAME_WIDTH){
                     skeletonFaceDir =GameConstants.Face_Dir.LEFT;
                 }
                 break;
