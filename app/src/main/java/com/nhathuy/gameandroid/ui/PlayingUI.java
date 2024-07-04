@@ -10,14 +10,19 @@ import com.nhathuy.gameandroid.gamestates.Playing;
 import com.nhathuy.gameandroid.main.Game;
 
 public class PlayingUI {
+
+    private final PointF joystickCenterPos= new PointF(350,1050);
+    private final PointF attackBtnCenterPos= new PointF(2500,1050);
+
     private  final Playing playing;
-
+    private final Paint circlePaint;
     //for Ui
-    private float xCenter=350,yCenter=1050,radius=150;
-    private Paint circlePaint;
+    private int radius=150;
 
-    private float xTouch,yTouch;
 
+//    private float xTouch,yTouch;
+    //For multitouch
+    private int joystickPointerId=-1;
     private boolean touchDown;
 
     private CustomButton btnMenu;
@@ -36,58 +41,106 @@ public class PlayingUI {
         drawUI(c);
     }
     private void drawUI(Canvas c) {
-        c.drawCircle(xCenter,yCenter,radius,circlePaint);
-        c.drawBitmap(ButtonImages.PLAYING_MENU.getBtnImg(btnMenu.isPushed()),
+        c.drawCircle(joystickCenterPos.x,joystickCenterPos.y,radius,circlePaint);
+        c.drawCircle(attackBtnCenterPos.x,attackBtnCenterPos.y,radius,circlePaint);
+        c.drawBitmap(ButtonImages.PLAYING_MENU.getBtnImg(btnMenu.isPushed(btnMenu.getPointerId())),
                 btnMenu.getHitBox().left,
                 btnMenu.getHitBox().top
                 ,null);
     }
+
+    private void spawnSkeleton(){
+        playing.spawnSkeleton();
+    }
+    //kiểm tra nút di chuyển có còn nằm trong vùng di chuyển không
+    private boolean checkInsideJoyStick(PointF eventPos, int pointerId){
+
+        if(isInsideRadius(eventPos,joystickCenterPos)){
+            touchDown=true;
+            joystickPointerId=pointerId;
+            return true;
+        }
+
+        return false;
+    }
+    //kiểm tra nút tấn công
+    private boolean checkInsideAttackBtn(PointF eventPos){
+        return  isInsideRadius(eventPos,attackBtnCenterPos);
+    }
+    private boolean isInsideRadius(PointF eventPos,PointF circle){
+        float a=Math.abs(eventPos.x-circle.x);
+        float b=Math.abs(eventPos.y-circle.y);
+        float c=(float) Math.hypot(a,b);
+
+        return c<=radius;
+    }
     public void touchEvents(MotionEvent event){
-        switch (event.getAction()){
-            case MotionEvent.ACTION_DOWN -> {
-                float x=event.getX();
-                float y=event.getY();
 
-                float a=Math.abs(x-xCenter);
-                float b=Math.abs(y-yCenter);
-                float c=(float) Math.hypot(a,b);
+       final int action =event.getActionMasked();
+       final int actionIndex=event.getActionIndex();
+       final int pointerId=event.getPointerId(actionIndex);
 
-                if(c<=radius){
+       final PointF eventPos=new PointF(event.getX(actionIndex),event.getY(actionIndex));
+
+        switch (action){
+            case MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
+
+                if(checkInsideJoyStick(eventPos,pointerId)){
                     touchDown=true;
-                    xTouch=x;
-                    yTouch=y;
+                } else if (checkInsideAttackBtn(eventPos)) {
+                    spawnSkeleton();
                 } else{
-                    if(isIn(event,btnMenu)){
-                        btnMenu.setPushed(true);
+                    if(isIn(eventPos,btnMenu)){
+                        btnMenu.setPushed(true,pointerId);
                     }
                 }
 
             }
             case MotionEvent.ACTION_MOVE-> {
+
                 if(touchDown){
-                    xTouch=event.getX();
-                    yTouch=event.getY();
-
-                    float xDiff=xTouch-xCenter;
-                    float yDiff=yTouch-yCenter;
-
-                    playing.setPlayerMoveTrue(new PointF(xDiff,yDiff));
-                }
-
-            }
-            case MotionEvent.ACTION_UP-> {
-                if(isIn(event,btnMenu)){
-                    if(btnMenu.isPushed()){
-                        playing.setGameStateToMenu();
+                    for (int i = 0; i <event.getPointerCount() ; i++) {
+                        if (event.getPointerId(i)==joystickPointerId){
+                            float xDiff=event.getX(i) -joystickCenterPos.x;
+                            float yDiff=event.getY(i) -joystickCenterPos.y;
+                            playing.setPlayerMoveTrue(new PointF(xDiff,yDiff));
+                        }
                     }
                 }
-                btnMenu.setPushed(false);
-                touchDown=false;
-                playing.setPlayerMoveFalse();
+
+
+//                if(touchDown){
+//
+//                    float xDiff=event.getX()-xCenter;
+//                    float yDiff=event.getY()-yCenter;
+//
+//                    playing.setPlayerMoveTrue(new PointF(xDiff,yDiff));
+//                }
+
+            }
+            case MotionEvent.ACTION_UP,MotionEvent.ACTION_POINTER_UP-> {
+
+                if(joystickPointerId==pointerId){
+                    resetJoystick();
+                }
+                else{
+                    if(isIn(eventPos,btnMenu)){
+                        if(btnMenu.isPushed(pointerId)){
+                            resetJoystick();
+                            playing.setGameStateToMenu();
+                        }
+                    }
+                    btnMenu.unPush(pointerId);
+                }
             }
         }
     }
-    private boolean isIn(MotionEvent e, CustomButton b) {
-        return b.getHitBox().contains(e.getX(),e.getY());
+    private void resetJoystick(){
+        touchDown=false;
+        playing.setPlayerMoveFalse();
+        joystickPointerId=-1;
+    }
+    private boolean isIn(PointF eventPos, CustomButton b) {
+        return b.getHitBox().contains(eventPos.x,eventPos.y);
     }
 }

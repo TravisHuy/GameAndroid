@@ -1,6 +1,7 @@
 package com.nhathuy.gameandroid.entities;
 
 import android.graphics.Point;
+import android.graphics.PointF;
 
 import com.nhathuy.gameandroid.helpers.GameConstants;
 
@@ -9,7 +10,7 @@ public abstract class Character extends  Entity{
     protected int aniTick,aniIndex;
     protected int faceDir= GameConstants.Face_Dir.DOWN;
     protected final GameCharacters gameCharType;
-    public Character(Point pos, GameCharacters gameCharType) {
+    public Character(PointF pos, GameCharacters gameCharType) {
         super(pos, 1, 1);
         this.gameCharType=gameCharType;
     }

@@ -3,7 +3,7 @@ package com.nhathuy.gameandroid.entities.enemies;
 import static com.nhathuy.gameandroid.main.MainActivity.GAME_HEIGHT;
 import static com.nhathuy.gameandroid.main.MainActivity.GAME_WIDTH;
 
-import android.graphics.Point;
+import android.graphics.PointF;
 
 import com.nhathuy.gameandroid.entities.Character;
 import com.nhathuy.gameandroid.entities.GameCharacters;
@@ -15,7 +15,7 @@ public class Skeleton extends Character {
     private Random random=new Random();
     private long lastDirChange = System.currentTimeMillis();
 
-    public Skeleton(Point pos) {
+    public Skeleton(PointF pos) {
         super(pos, GameCharacters.SKELETON);
     }
     public void update(double delta){
