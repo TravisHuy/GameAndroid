@@ -1,4 +1,4 @@
-package com.nhathuy.gameandroid;
+package com.nhathuy.gameandroid.main;
 
 import androidx.appcompat.app.AppCompatActivity;
 
@@ -7,9 +7,10 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.Log;
-import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
+
+import com.nhathuy.gameandroid.main.GamePanel;
 
 public class MainActivity extends AppCompatActivity {
 

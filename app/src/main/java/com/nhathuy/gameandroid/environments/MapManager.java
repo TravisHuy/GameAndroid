@@ -1,12 +1,10 @@
 package com.nhathuy.gameandroid.environments;
 
-import static com.nhathuy.gameandroid.MainActivity.GAME_HEIGHT;
-import static com.nhathuy.gameandroid.MainActivity.GAME_WIDTH;
+import static com.nhathuy.gameandroid.main.MainActivity.GAME_HEIGHT;
+import static com.nhathuy.gameandroid.main.MainActivity.GAME_WIDTH;
 
 import android.graphics.Canvas;
 import android.graphics.Rect;
-
-import com.nhathuy.gameandroid.helpers.GameConstants;
 
 public class MapManager {
 

@@ -1,48 +1,29 @@
-package com.nhathuy.gameandroid;
+package com.nhathuy.gameandroid.gamestates;
 
-import static com.nhathuy.gameandroid.MainActivity.GAME_HEIGHT;
-import static com.nhathuy.gameandroid.MainActivity.GAME_WIDTH;
-
-import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
 import android.view.MotionEvent;
-import android.view.SurfaceHolder;
-import android.view.SurfaceView;
-
-import androidx.annotation.NonNull;
 
 import com.nhathuy.gameandroid.entities.Character;
-import com.nhathuy.gameandroid.entities.GameCharacters;
 import com.nhathuy.gameandroid.entities.Player;
 import com.nhathuy.gameandroid.entities.enemies.Skeleton;
-import com.nhathuy.gameandroid.environments.GameMap;
 import com.nhathuy.gameandroid.environments.MapManager;
 import com.nhathuy.gameandroid.helpers.GameConstants;
-import com.nhathuy.gameandroid.inputs.TouchEvents;
+import com.nhathuy.gameandroid.helpers.interfaces.GameStateInterface;
+import com.nhathuy.gameandroid.main.Game;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
 
-//Tạo bảng điều khiển trò chơi
-//surfacerview: một lớp chuyên dụng cho phép vẽ trực tiếp lên màn hình
-public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
-
+public class Playing extends BaseState implements GameStateInterface {
 
     private Paint redPaint= new Paint();
-    private SurfaceHolder holder;
-
     private float cameraX, cameraY;
     private PointF skeletonPos;
     //thêm luồng cho game
-    private GameLoop gameLoop;
     private boolean movePlayer;
-    //touch
-    private TouchEvents touchEvents;
     private PointF lastTouchDiff;
 
     private Player player;
@@ -53,33 +34,54 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     private Character character;
     //Testing Map
     private MapManager mapManager;
-    public GamePanel(Context context){
-        super(context);
-        holder=getHolder();
-        holder.addCallback(this);
-        redPaint.setColor(Color.GREEN);
-        gameLoop=new GameLoop(this);
-        touchEvents= new TouchEvents(this);
+
+
+    //for Ui
+    private float xCenter=350,yCenter=1050,radius=150;
+    private Paint circlePaint;
+
+    private float xTouch,yTouch;
+
+    private boolean touchDown;
+    
+    public Playing(Game game){
+        super(game);
+
+        circlePaint = new Paint();
+        circlePaint.setColor(Color.RED);
+        circlePaint.setStrokeWidth(5);
+        circlePaint.setStyle(Paint.Style.STROKE);
+
         mapManager=new MapManager();
         player=new Player();
         skeletons=new ArrayList<>();
         for (int i=0;i<50;i++){
             skeletons.add(new Skeleton(new Point(100,100)));
         }
+    }
+    @Override
+    public void update(double delta) {
+        mapManager.setCameraValues(cameraX, cameraY);
+        player.update(delta,movePlayer);
+        for (Skeleton skeleton:skeletons){
+            skeleton.update(delta);
+        }
+        updatePlayerMove(delta);
 
     }
 
-    public void render(){
-        Canvas c=holder.lockCanvas();
-        c.drawColor(Color.BLACK);
-
+    @Override
+    public void render(Canvas c) {
         mapManager.draw(c);
-        touchEvents.draw(c);
+        drawUI(c);
         drawPlayer(c);
         for (Skeleton skeleton:skeletons){
             drawCharacter(c,skeleton);
         }
-        holder.unlockCanvasAndPost(c);
+    }
+
+    private void drawUI(Canvas c) {
+        c.drawCircle(xCenter,yCenter,radius,circlePaint);
     }
 
     private void drawPlayer(Canvas c) {
@@ -91,20 +93,6 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
     public void drawCharacter(Canvas canvas, Character c){
         canvas.drawBitmap(c.getGameCharType().getSprites(c.getAniIndex(),c.getFaceDir()),c.getHitBox().left+cameraX,c.getHitBox().top+cameraY,null);
     }
-
-    //update lại giao diện
-    public void update(double delta){
-
-        mapManager.setCameraValues(cameraX, cameraY);
-        player.update(delta,movePlayer);
-        for (Skeleton skeleton:skeletons){
-            skeleton.update(delta);
-        }
-        updatePlayerMove(delta);
-
-//        .updateAnimation();
-    }
-
     private void updatePlayerMove(double delta) {
         if(!movePlayer)
             return;
@@ -115,8 +103,6 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         float xSpeed= (float) Math.cos(angle);
         float ySpeed= (float) Math.sin(angle);
 
-//        System.out.println("Angle: "+Math.toDegrees(angle));
-//        System.out.println("xSpeed: " + xSpeed+ "| ySpeed: "+ySpeed);
 
         if(xSpeed>ySpeed){
             if(lastTouchDiff.x>0){
@@ -155,30 +141,6 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
             cameraY += deltaY;
         }
     }
-
-
-
-    // xử lý sự kiện chạm vào màn hình. kiểm tra hoạt động chậm , di chuyển, nhã  để thực hiện các hành động tưng ứng
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-
-       return touchEvents.touchEvent(event);
-    }
-
-    @Override
-    public void surfaceCreated(@NonNull SurfaceHolder surfaceHolder) {
-        gameLoop.startGameLoop();
-    }
-
-    @Override
-    public void surfaceChanged(@NonNull SurfaceHolder surfaceHolder, int i, int i1, int i2) {
-
-    }
-
-    @Override
-    public void surfaceDestroyed(@NonNull SurfaceHolder surfaceHolder) {
-
-    }
     public void setPlayerMoveTrue(PointF lastTouchDiff){
         movePlayer= true;
         this.lastTouchDiff=lastTouchDiff;
@@ -188,5 +150,41 @@ public class GamePanel extends SurfaceView implements SurfaceHolder.Callback {
         player.resetAnimation();
     }
 
+    @Override
+    public void touchEvent(MotionEvent event) {
+        switch (event.getAction()){
+            case MotionEvent.ACTION_DOWN -> {
+                float x=event.getX();
+                float y=event.getY();
 
+                float a=Math.abs(x-xCenter);
+                float b=Math.abs(y-yCenter);
+                float c=(float) Math.hypot(a,b);
+
+                if(c<=radius){
+                    touchDown=true;
+                    xTouch=x;
+                    yTouch=y;
+                } else
+                    game.setCurrentGameState(Game.GameState.MENU);
+
+            }
+            case MotionEvent.ACTION_MOVE-> {
+                if(touchDown){
+                    xTouch=event.getX();
+                    yTouch=event.getY();
+
+                    float xDiff=xTouch-xCenter;
+                    float yDiff=yTouch-yCenter;
+
+                    setPlayerMoveTrue(new PointF(xDiff,yDiff));
+                }
+
+            }
+            case MotionEvent.ACTION_UP-> {
+                touchDown=false;
+                setPlayerMoveFalse();
+            }
+        }
+    }
 }

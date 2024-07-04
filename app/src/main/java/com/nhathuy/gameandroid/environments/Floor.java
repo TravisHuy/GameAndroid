@@ -3,7 +3,7 @@ package com.nhathuy.gameandroid.environments;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
-import com.nhathuy.gameandroid.MainActivity;
+import com.nhathuy.gameandroid.main.MainActivity;
 import com.nhathuy.gameandroid.R;
 import com.nhathuy.gameandroid.helpers.GameConstants;
 import com.nhathuy.gameandroid.helpers.interfaces.BitMapMethods;
