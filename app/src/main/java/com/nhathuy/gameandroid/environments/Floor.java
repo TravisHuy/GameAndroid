@@ -8,6 +8,7 @@ import com.nhathuy.gameandroid.R;
 import com.nhathuy.gameandroid.helpers.GameConstants;
 import com.nhathuy.gameandroid.helpers.interfaces.BitMapMethods;
 
+//Bản đồ trong game
 public enum Floor implements BitMapMethods {
     OUTSIDE(R.drawable.tileset_floor,22,26);
     private Bitmap[] sprites;

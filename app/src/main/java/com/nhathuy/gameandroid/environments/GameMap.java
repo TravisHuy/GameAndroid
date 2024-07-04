@@ -8,31 +8,25 @@ import android.graphics.Rect;
 
 import com.nhathuy.gameandroid.helpers.GameConstants;
 
+//dùng để vẽ các ô trong game
 public class GameMap {
     private int[][] spriteIds;
-    private int tileWidth, tileHeight;
 
     public GameMap(int[][] spriteIds) {
         this.spriteIds = spriteIds;
-        calculateTileSize();
     }
 
-    private void calculateTileSize() {
-        tileWidth = GAME_WIDTH / spriteIds[0].length;
-        tileHeight = GAME_HEIGHT / spriteIds.length;
+
+
+    public int getSpriteID(int xIndex, int yIndex) {
+        return spriteIds[yIndex][xIndex];
     }
 
-    public void draw(Canvas c){
-        for (int j = 0; j < spriteIds.length; j++) {
-            for (int i = 0; i < spriteIds[j].length; i++) {
-                Rect dstRect = new Rect(
-                        i * tileWidth,
-                        j * tileHeight,
-                        (i + 1) * tileWidth,
-                        (j + 1) * tileHeight
-                );
-                c.drawBitmap(Floor.OUTSIDE.getSprite(spriteIds[j][i]), null, dstRect, null);
-            }
-        }
+    public int getArrayWidth() {
+        return spriteIds[0].length;
+    }
+
+    public int getArrayHeight() {
+        return spriteIds.length;
     }
 }
