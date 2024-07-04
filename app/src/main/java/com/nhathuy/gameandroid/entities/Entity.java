@@ -3,7 +3,7 @@ package com.nhathuy.gameandroid.entities;
 import android.graphics.Point;
 import android.graphics.RectF;
 
-public class Entity {
+public abstract class Entity {
     protected RectF hitBox;
 
     public Entity(Point pos, float width, float height){
