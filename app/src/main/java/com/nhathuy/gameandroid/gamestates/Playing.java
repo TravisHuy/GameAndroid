@@ -1,5 +1,8 @@
 package com.nhathuy.gameandroid.gamestates;
 
+import static com.nhathuy.gameandroid.helpers.GameConstants.Sprite.X_DRAW_OFFSET;
+import static com.nhathuy.gameandroid.helpers.GameConstants.Sprite.Y_DRAW_OFFSET;
+
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
@@ -153,17 +156,17 @@ public class Playing extends BaseState implements GameStateInterface {
     private PointF getWepPos() {
         return switch (player.getFaceDir()){
             case GameConstants.Face_Dir.UP ->
-                new PointF(player.getHitBox().left+1.75f*GameConstants.Sprite.SCALE_MULTIPLIER,
-                        player.getHitBox().top-Weapons.BIG_SWORD.getHeight());
+                new PointF(player.getHitBox().left -0.5f *GameConstants.Sprite.SCALE_MULTIPLIER,
+                        player.getHitBox().top-Weapons.BIG_SWORD.getHeight()-Y_DRAW_OFFSET);
             case GameConstants.Face_Dir.DOWN ->
-                    new PointF(player.getHitBox().left+2.5f*GameConstants.Sprite.SCALE_MULTIPLIER,
+                    new PointF(player.getHitBox().left+0.75f*GameConstants.Sprite.SCALE_MULTIPLIER,
                             player.getHitBox().bottom);
             case GameConstants.Face_Dir.LEFT->
-                    new PointF(player.getHitBox().left-Weapons.BIG_SWORD.getHeight(),
+                    new PointF(player.getHitBox().left-Weapons.BIG_SWORD.getHeight()-X_DRAW_OFFSET,
                             player.getHitBox().bottom-Weapons.BIG_SWORD.getWidth()-0.75f*GameConstants.Sprite.SCALE_MULTIPLIER );
 
             case GameConstants.Face_Dir.RIGHT->
-                    new PointF(player.getHitBox().right,
+                    new PointF(player.getHitBox().right+X_DRAW_OFFSET,
                             player.getHitBox().bottom-Weapons.BIG_SWORD.getWidth()-0.75f*GameConstants.Sprite.SCALE_MULTIPLIER );
             default -> throw new IllegalArgumentException("Unexpected Value: "+player.getFaceDir());
         };
@@ -185,9 +188,13 @@ public class Playing extends BaseState implements GameStateInterface {
 
 
     private void drawPlayer(Canvas c) {
+        //vẽ bóng
+        c.drawBitmap(Weapons.SHADOW.getWeaponImg(),player.getHitBox().left,
+                player.getHitBox().bottom-5*GameConstants.Sprite.SCALE_MULTIPLIER,null);
+
         c.drawBitmap(player.getGameCharType().getSprites(getAniIndex(),player.getFaceDir()),
-                player.getHitBox().left,
-                player.getHitBox().top,
+                player.getHitBox().left - GameConstants.Sprite.X_DRAW_OFFSET,
+                player.getHitBox().top - Y_DRAW_OFFSET,
                 null);
 
         c.drawRect(player.getHitBox(),redPaint);
@@ -236,8 +243,13 @@ public class Playing extends BaseState implements GameStateInterface {
 
 
     public void drawCharacter(Canvas canvas, Character c){
+
+        canvas.drawBitmap(Weapons.SHADOW.getWeaponImg(),c.getHitBox().left+cameraX,
+                c.getHitBox().bottom-5*GameConstants.Sprite.SCALE_MULTIPLIER+cameraY,null);
+
         canvas.drawBitmap(c.getGameCharType().getSprites(c.getAniIndex(),c.getFaceDir()),
-                c.getHitBox().left+cameraX,c.getHitBox().top+cameraY,null);
+                c.getHitBox().left+cameraX-GameConstants.Sprite.X_DRAW_OFFSET
+                ,c.getHitBox().top+cameraY- Y_DRAW_OFFSET,null);
 
         canvas.drawRect(c.getHitBox().left + cameraX, c.getHitBox().top + cameraY, c.getHitBox().right + cameraX,
                 c.getHitBox().bottom + cameraY, redPaint);

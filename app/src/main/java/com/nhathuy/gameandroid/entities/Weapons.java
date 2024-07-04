@@ -9,7 +9,9 @@ import com.nhathuy.gameandroid.main.MainActivity;
 
 public enum Weapons implements BitMapMethods {
 
-    BIG_SWORD(R.drawable.big_sword);
+    BIG_SWORD(R.drawable.big_sword),
+    SHADOW(R.drawable.shadow);
+
     Bitmap weaponImg;
     Weapons(int resId){
         weaponImg= getScaledBitmap(BitmapFactory.decodeResource(MainActivity.getGameContext().getResources(),resId,options));

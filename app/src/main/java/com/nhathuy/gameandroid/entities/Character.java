@@ -1,5 +1,6 @@
 package com.nhathuy.gameandroid.entities;
 
+import static com.nhathuy.gameandroid.helpers.GameConstants.Sprite.HITBOX_SIZE;
 import static com.nhathuy.gameandroid.helpers.GameConstants.Sprite.SIZE;
 
 import android.graphics.Point;
@@ -13,7 +14,7 @@ public abstract class Character extends  Entity{
     protected int faceDir= GameConstants.Face_Dir.DOWN;
     protected final GameCharacters gameCharType;
     public Character(PointF pos, GameCharacters gameCharType) {
-        super(pos, SIZE, SIZE);
+        super(pos, HITBOX_SIZE, HITBOX_SIZE);
         this.gameCharType=gameCharType;
     }
 
