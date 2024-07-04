@@ -23,6 +23,7 @@ public class PlayingUI {
 //    private float xTouch,yTouch;
     //For multitouch
     private int joystickPointerId=-1;
+    private int attackBtnPointerId=-1;
     private boolean touchDown;
 
     private CustomButton btnMenu;
@@ -88,7 +89,10 @@ public class PlayingUI {
                 if(checkInsideJoyStick(eventPos,pointerId)){
                     touchDown=true;
                 } else if (checkInsideAttackBtn(eventPos)) {
-                    spawnSkeleton();
+                    if(attackBtnPointerId<0){
+                        playing.setAttacking(true);
+                        attackBtnPointerId=pointerId;
+                    }
                 } else{
                     if(isIn(eventPos,btnMenu)){
                         btnMenu.setPushed(true,pointerId);
@@ -131,6 +135,11 @@ public class PlayingUI {
                         }
                     }
                     btnMenu.unPush(pointerId);
+                    if(pointerId==attackBtnPointerId){
+                        playing.setAttacking(false);
+                        attackBtnPointerId=-1;
+                    }
+
                 }
             }
         }

@@ -1,13 +1,16 @@
 package com.nhathuy.gameandroid.gamestates;
 
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.RectF;
 import android.view.MotionEvent;
 
 import com.nhathuy.gameandroid.entities.Character;
 import com.nhathuy.gameandroid.entities.Player;
+import com.nhathuy.gameandroid.entities.Weapons;
 import com.nhathuy.gameandroid.entities.enemies.Skeleton;
 import com.nhathuy.gameandroid.environments.MapManager;
 import com.nhathuy.gameandroid.helpers.GameConstants;
@@ -19,7 +22,7 @@ import java.util.ArrayList;
 
 public class Playing extends BaseState implements GameStateInterface {
 
-    private Paint redPaint= new Paint();
+    private final Paint redPaint;
     private float cameraX, cameraY;
     private PointF skeletonPos;
     //thêm luồng cho game
@@ -37,6 +40,9 @@ public class Playing extends BaseState implements GameStateInterface {
 
     private PlayingUI playingUI;
 
+    private boolean attacking,attackChecked;
+    private RectF attackBox=null;
+
 
     public Playing(Game game){
         super(game);
@@ -47,6 +53,18 @@ public class Playing extends BaseState implements GameStateInterface {
         skeletons=new ArrayList<>();
 
         playingUI=new PlayingUI(this);
+
+        redPaint=new Paint();
+
+        redPaint.setStrokeWidth(1);
+        redPaint.setStyle(Paint.Style.STROKE);
+        redPaint.setColor(Color.RED);
+
+
+        for (int i = 0; i < 5; i++)
+            spawnSkeleton();
+
+        updateWepHitbox();
     }
 
     public void spawnSkeleton(){
@@ -58,13 +76,97 @@ public class Playing extends BaseState implements GameStateInterface {
     public void update(double delta) {
         mapManager.setCameraValues(cameraX, cameraY);
         player.update(delta,movePlayer);
-        synchronized (skeletons) {
-            for (Skeleton skeleton : skeletons) {
-                skeleton.update(delta);
+        updateWepHitbox();
+
+
+        if(attacking){
+            if(!attackChecked){
+                checkAttack();
             }
         }
-        updatePlayerMove(delta);
 
+
+            for (Skeleton skeleton : skeletons) {
+                if(skeleton.isActive()){
+                    skeleton.update(delta);
+                }
+
+
+        }
+        updatePlayerMove(delta);
+        updateWepHitbox();
+    }
+
+    private void checkAttack() {
+        RectF attackBoxWithoutCamera =new RectF(attackBox);
+        attackBoxWithoutCamera.left-=cameraX;
+        attackBoxWithoutCamera.top-=cameraY;
+        attackBoxWithoutCamera.right-=cameraX;
+        attackBoxWithoutCamera.bottom-=cameraY;
+
+        for(Skeleton s:skeletons){
+            if (attackBoxWithoutCamera.intersects(s.getHitBox().left, s.getHitBox().top, s.getHitBox().right, s.getHitBox().bottom)){
+                s.setActive(false);
+            }
+        }
+        attackChecked=true;
+    }
+
+    /*
+    height>width
+    width>height
+     */
+    private void updateWepHitbox() {
+        PointF pos=getWepPos();
+
+        float w=getWepWidth();
+        float h=getWepHeight();
+
+        attackBox = new RectF(pos.x,pos.y,pos.x+w,pos.y+h);
+    }
+
+
+
+    private float getWepWidth() {
+        return switch (player.getFaceDir()){
+
+            //height>width
+            case GameConstants.Face_Dir.UP,GameConstants.Face_Dir.DOWN ->
+                Weapons.BIG_SWORD.getWidth();
+            case GameConstants.Face_Dir.LEFT  ,GameConstants.Face_Dir.RIGHT ->
+                    Weapons.BIG_SWORD.getHeight();
+                default -> throw new IllegalArgumentException("Unexpected Value: "+player.getFaceDir());
+        };
+    }
+    private float getWepHeight() {
+        return switch (player.getFaceDir()){
+
+            //height>width
+            case GameConstants.Face_Dir.UP,GameConstants.Face_Dir.DOWN ->
+                    Weapons.BIG_SWORD.getHeight();
+            case GameConstants.Face_Dir.LEFT  ,GameConstants.Face_Dir.RIGHT ->
+                    Weapons.BIG_SWORD.getWidth();
+            default -> throw new IllegalArgumentException("Unexpected Value: "+player.getFaceDir());
+        };
+    }
+    //thêm ví trí của thanh kiếm
+    private PointF getWepPos() {
+        return switch (player.getFaceDir()){
+            case GameConstants.Face_Dir.UP ->
+                new PointF(player.getHitBox().left+1.75f*GameConstants.Sprite.SCALE_MULTIPLIER,
+                        player.getHitBox().top-Weapons.BIG_SWORD.getHeight());
+            case GameConstants.Face_Dir.DOWN ->
+                    new PointF(player.getHitBox().left+2.5f*GameConstants.Sprite.SCALE_MULTIPLIER,
+                            player.getHitBox().bottom);
+            case GameConstants.Face_Dir.LEFT->
+                    new PointF(player.getHitBox().left-Weapons.BIG_SWORD.getHeight(),
+                            player.getHitBox().bottom-Weapons.BIG_SWORD.getWidth()-0.75f*GameConstants.Sprite.SCALE_MULTIPLIER );
+
+            case GameConstants.Face_Dir.RIGHT->
+                    new PointF(player.getHitBox().right,
+                            player.getHitBox().bottom-Weapons.BIG_SWORD.getWidth()-0.75f*GameConstants.Sprite.SCALE_MULTIPLIER );
+            default -> throw new IllegalArgumentException("Unexpected Value: "+player.getFaceDir());
+        };
     }
 
     @Override
@@ -72,23 +174,73 @@ public class Playing extends BaseState implements GameStateInterface {
         mapManager.draw(c);
         playingUI.draw(c);
         drawPlayer(c);
-        synchronized (skeletons) {
-            for (Skeleton skeleton : skeletons) {
-                drawCharacter(c, skeleton);
-            }
-        }
+
+            for (Skeleton skeleton : skeletons)
+                if(skeleton.isActive())
+                    drawCharacter(c, skeleton);
+
+
     }
 
 
 
     private void drawPlayer(Canvas c) {
-        c.drawBitmap(player.getGameCharType().getSprites(player.getAniIndex(),player.getFaceDir()),
+        c.drawBitmap(player.getGameCharType().getSprites(getAniIndex(),player.getFaceDir()),
                 player.getHitBox().left,
                 player.getHitBox().top,
                 null);
+
+        c.drawRect(player.getHitBox(),redPaint);
+
+        if(attacking){
+            drawWeapon(c);
+        }
     }
+    private int getAniIndex(){
+        if(attacking) return 4;
+        return player.getAniIndex();
+    }
+    private void drawWeapon(Canvas c) {
+        c.rotate(getWepRot(),attackBox.left,attackBox.top);
+        c.drawBitmap(Weapons.BIG_SWORD.getWeaponImg(),attackBox.left+wepRotAdjustLeft(),
+                attackBox.top+wepRotAdjustTop(),null);
+        c.rotate(getWepRot()*-1,attackBox.left,attackBox.top);
+        c.drawRect(attackBox,redPaint);
+    }
+
+    private float wepRotAdjustTop() {
+        return switch (player.getFaceDir()){
+            case GameConstants.Face_Dir.LEFT   , GameConstants.Face_Dir.UP ->
+                    - Weapons.BIG_SWORD.getHeight();
+            default -> 0;
+        };
+    }
+
+    private float wepRotAdjustLeft() {
+
+        return switch (player.getFaceDir()){
+            case GameConstants.Face_Dir.UP  , GameConstants.Face_Dir.RIGHT ->
+                - Weapons.BIG_SWORD.getWidth();
+            default -> 0;
+        };
+    }
+
+    private float getWepRot() {
+        return switch (player.getFaceDir()){
+            case GameConstants.Face_Dir.LEFT -> 90;
+            case GameConstants.Face_Dir.UP -> 180;
+            case GameConstants.Face_Dir.RIGHT -> 270;
+            default -> 0;
+        };
+    }
+
+
     public void drawCharacter(Canvas canvas, Character c){
-        canvas.drawBitmap(c.getGameCharType().getSprites(c.getAniIndex(),c.getFaceDir()),c.getHitBox().left+cameraX,c.getHitBox().top+cameraY,null);
+        canvas.drawBitmap(c.getGameCharType().getSprites(c.getAniIndex(),c.getFaceDir()),
+                c.getHitBox().left+cameraX,c.getHitBox().top+cameraY,null);
+
+        canvas.drawRect(c.getHitBox().left + cameraX, c.getHitBox().top + cameraY, c.getHitBox().right + cameraX,
+                c.getHitBox().bottom + cameraY, redPaint);
     }
     private void updatePlayerMove(double delta) {
         if(!movePlayer)
@@ -154,4 +306,10 @@ public class Playing extends BaseState implements GameStateInterface {
         playingUI.touchEvents(event);
     }
 
+    public void setAttacking(boolean attacking) {
+        this.attacking=attacking;
+        if(!attacking){
+            attackChecked=false;
+        }
+    }
 }
