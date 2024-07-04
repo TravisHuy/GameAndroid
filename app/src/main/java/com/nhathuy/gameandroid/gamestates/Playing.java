@@ -1,7 +1,6 @@
 package com.nhathuy.gameandroid.gamestates;
 
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
@@ -14,6 +13,7 @@ import com.nhathuy.gameandroid.environments.MapManager;
 import com.nhathuy.gameandroid.helpers.GameConstants;
 import com.nhathuy.gameandroid.helpers.interfaces.GameStateInterface;
 import com.nhathuy.gameandroid.main.Game;
+import com.nhathuy.gameandroid.ui.PlayingUI;
 
 import java.util.ArrayList;
 
@@ -35,22 +35,12 @@ public class Playing extends BaseState implements GameStateInterface {
     //Testing Map
     private MapManager mapManager;
 
+    private PlayingUI playingUI;
 
-    //for Ui
-    private float xCenter=350,yCenter=1050,radius=150;
-    private Paint circlePaint;
 
-    private float xTouch,yTouch;
-
-    private boolean touchDown;
-    
     public Playing(Game game){
         super(game);
 
-        circlePaint = new Paint();
-        circlePaint.setColor(Color.RED);
-        circlePaint.setStrokeWidth(5);
-        circlePaint.setStyle(Paint.Style.STROKE);
 
         mapManager=new MapManager();
         player=new Player();
@@ -58,6 +48,7 @@ public class Playing extends BaseState implements GameStateInterface {
         for (int i=0;i<50;i++){
             skeletons.add(new Skeleton(new Point(100,100)));
         }
+        playingUI=new PlayingUI(this);
     }
     @Override
     public void update(double delta) {
@@ -73,16 +64,14 @@ public class Playing extends BaseState implements GameStateInterface {
     @Override
     public void render(Canvas c) {
         mapManager.draw(c);
-        drawUI(c);
+        playingUI.draw(c);
         drawPlayer(c);
         for (Skeleton skeleton:skeletons){
             drawCharacter(c,skeleton);
         }
     }
 
-    private void drawUI(Canvas c) {
-        c.drawCircle(xCenter,yCenter,radius,circlePaint);
-    }
+
 
     private void drawPlayer(Canvas c) {
         c.drawBitmap(player.getGameCharType().getSprites(player.getAniIndex(),player.getFaceDir()),
@@ -149,42 +138,12 @@ public class Playing extends BaseState implements GameStateInterface {
         movePlayer=false;
         player.resetAnimation();
     }
-
+    public void setGameStateToMenu(){
+        game.setCurrentGameState(Game.GameState.MENU);
+    }
     @Override
     public void touchEvent(MotionEvent event) {
-        switch (event.getAction()){
-            case MotionEvent.ACTION_DOWN -> {
-                float x=event.getX();
-                float y=event.getY();
-
-                float a=Math.abs(x-xCenter);
-                float b=Math.abs(y-yCenter);
-                float c=(float) Math.hypot(a,b);
-
-                if(c<=radius){
-                    touchDown=true;
-                    xTouch=x;
-                    yTouch=y;
-                } else
-                    game.setCurrentGameState(Game.GameState.MENU);
-
-            }
-            case MotionEvent.ACTION_MOVE-> {
-                if(touchDown){
-                    xTouch=event.getX();
-                    yTouch=event.getY();
-
-                    float xDiff=xTouch-xCenter;
-                    float yDiff=yTouch-yCenter;
-
-                    setPlayerMoveTrue(new PointF(xDiff,yDiff));
-                }
-
-            }
-            case MotionEvent.ACTION_UP-> {
-                touchDown=false;
-                setPlayerMoveFalse();
-            }
-        }
+        playingUI.touchEvents(event);
     }
+
 }
